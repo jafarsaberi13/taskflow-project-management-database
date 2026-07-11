@@ -80,3 +80,26 @@ CREATE TABLE workspace_members (
     CONSTRAINT fk_workspace_members_user_id FOREIGN KEY (user_id) REFERENCES users(user_id),
     CONSTRAINT chk_member_role CHECK (member_role IN ('OWNER', 'ADMIN', 'MEMBER'))
 );
+
+CREATE TABLE projects (
+    project_id BIGSERIAL,
+    workspace_id BIGINT NOT NULL,
+    project_name VARCHAR(100) NOT NULL,
+    project_key VARCHAR(10) NOT NULL,
+    description TEXT,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_projects PRIMARY KEY (project_id),
+    CONSTRAINT fk_projects_workspace_id FOREIGN KEY (workspace_id) REFERENCES workspaces(workspace_id)
+);
+
+CREATE TABLE project_members (
+    project_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    project_role VARCHAR(50) NOT NULL,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_project_members PRIMARY KEY (project_id, user_id),
+    CONSTRAINT fk_project_members_project_id FOREIGN KEY (project_id) REFERENCES projects(project_id),
+    CONSTRAINT fk_project_members_user_id FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT chk_project_role CHECK (project_role IN ('MANAGER', 'DEVELOPER', 'VIEWER'))
+);
