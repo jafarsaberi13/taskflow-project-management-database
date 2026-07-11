@@ -103,3 +103,50 @@ CREATE TABLE project_members (
     CONSTRAINT fk_project_members_user_id FOREIGN KEY (user_id) REFERENCES users(user_id),
     CONSTRAINT chk_project_role CHECK (project_role IN ('MANAGER', 'DEVELOPER', 'VIEWER'))
 );
+
+CREATE TABLE tasks (
+    task_id BIGSERIAL,
+    project_id BIGINT NOT NULL,
+    reporter_id BIGINT NOT NULL,
+    assignee_id BIGINT,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    status VARCHAR(50) NOT NULL,
+    priority VARCHAR(50) NOT NULL,
+    due_date TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    custom_fields JSONB DEFAULT '{}'::jsonb,
+    CONSTRAINT pk_tasks PRIMARY KEY (task_id),
+    CONSTRAINT fk_tasks_project_id FOREIGN KEY (project_id) REFERENCES projects(project_id),
+    CONSTRAINT fk_tasks_reporter_id FOREIGN KEY (reporter_id) REFERENCES users(user_id),
+    CONSTRAINT fk_tasks_assignee_id FOREIGN KEY (assignee_id) REFERENCES users(user_id),
+    CONSTRAINT chk_task_status CHECK (status IN ('TODO', 'IN_PROGRESS', 'REVIEW', 'DONE')),
+    CONSTRAINT chk_task_priority CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL'))
+);
+
+CREATE TABLE task_comments (
+    comment_id BIGSERIAL,
+    task_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    comment_text TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_task_comments PRIMARY KEY (comment_id),
+    CONSTRAINT fk_task_comments_task_id FOREIGN KEY (task_id) REFERENCES tasks(task_id),
+    CONSTRAINT fk_task_comments_user_id FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE task_attachments (
+    attachment_id BIGSERIAL,
+    task_id BIGINT NOT NULL,
+    uploaded_by BIGINT NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_size INT NOT NULL,
+    file_url VARCHAR(512) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_task_attachments PRIMARY KEY (attachment_id),
+    CONSTRAINT fk_task_attachments_task_id FOREIGN KEY (task_id) REFERENCES tasks(task_id),
+    CONSTRAINT fk_task_attachments_user_id FOREIGN KEY (uploaded_by) REFERENCES users(user_id),
+    CONSTRAINT chk_file_size CHECK (file_size > 0)
+);
