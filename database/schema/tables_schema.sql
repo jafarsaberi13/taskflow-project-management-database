@@ -23,3 +23,60 @@ CREATE TABLE users (
     CONSTRAINT fk_users_system_role_id FOREIGN KEY (system_role_id) REFERENCES system_roles(role_id),
     CONSTRAINT chk_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
 );
+
+CREATE TABLE billing_plans (
+    plan_id SERIAL,
+    name VARCHAR(50) NOT NULL,
+    price NUMERIC(10,2) NOT NULL,
+    max_users INT NOT NULL,
+    CONSTRAINT pk_billing_plans PRIMARY KEY (plan_id),
+    CONSTRAINT uq_plan_name UNIQUE (name),
+    CONSTRAINT chk_plan_price CHECK (price >= 0),
+    CONSTRAINT chk_max_users CHECK (max_users > 0)
+);
+
+CREATE TABLE workspaces (
+    workspace_id BIGSERIAL,
+    billing_plan_id INT NOT NULL,
+    workspace_name VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) NOT NULL,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_workspaces PRIMARY KEY (workspace_id),
+    CONSTRAINT fk_workspaces_billing_plan_id FOREIGN KEY (billing_plan_id) REFERENCES billing_plans(plan_id)
+);
+
+CREATE TABLE subscriptions (
+    subscription_id BIGSERIAL,
+    workspace_id BIGINT NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    subscription_start_date TIMESTAMP NOT NULL,
+    subscription_end_date TIMESTAMP NOT NULL,
+    CONSTRAINT pk_subscriptions PRIMARY KEY (subscription_id),
+    CONSTRAINT fk_subscriptions_workspace_id FOREIGN KEY (workspace_id) REFERENCES workspaces(workspace_id),
+    CONSTRAINT chk_sub_status CHECK (status IN ('ACTIVE', 'PAST_DUE', 'CANCELED', 'EXPIRED'))
+);
+
+CREATE TABLE subscriptions_and_payments (
+    payment_id BIGSERIAL,
+    subscription_id BIGINT NOT NULL,
+    amount NUMERIC(10,2) NOT NULL,
+    transaction_ref VARCHAR(100) NOT NULL,
+    payment_status VARCHAR(50) NOT NULL,
+    payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_payments PRIMARY KEY (payment_id),
+    CONSTRAINT fk_payments_subscription_id FOREIGN KEY (subscription_id) REFERENCES subscriptions(subscription_id),
+    CONSTRAINT uq_transaction_ref UNIQUE (transaction_ref),
+    CONSTRAINT chk_payment_amount CHECK (amount > 0)
+);
+
+CREATE TABLE workspace_members (
+    workspace_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    member_role VARCHAR(50) NOT NULL,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_workspace_members PRIMARY KEY (workspace_id, user_id),
+    CONSTRAINT fk_workspace_members_workspace_id FOREIGN KEY (workspace_id) REFERENCES workspaces(workspace_id),
+    CONSTRAINT fk_workspace_members_user_id FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT chk_member_role CHECK (member_role IN ('OWNER', 'ADMIN', 'MEMBER'))
+);
