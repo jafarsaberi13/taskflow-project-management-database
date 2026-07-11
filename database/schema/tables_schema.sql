@@ -150,3 +150,51 @@ CREATE TABLE task_attachments (
     CONSTRAINT fk_task_attachments_user_id FOREIGN KEY (uploaded_by) REFERENCES users(user_id),
     CONSTRAINT chk_file_size CHECK (file_size > 0)
 );
+
+CREATE TABLE tags (
+    tag_id SERIAL,
+    workspace_id BIGINT NOT NULL,
+    name VARCHAR(50) NOT NULL,
+    color_code VARCHAR(7),
+    CONSTRAINT pk_tags PRIMARY KEY (tag_id),
+    CONSTRAINT fk_tags_workspace_id FOREIGN KEY (workspace_id) REFERENCES workspaces(workspace_id)
+);
+
+CREATE TABLE task_tags (
+    task_id BIGINT NOT NULL,
+    tag_id INT NOT NULL,
+    CONSTRAINT pk_task_tags PRIMARY KEY (task_id, tag_id),
+    CONSTRAINT fk_task_tags_task_id KEY (task_id) REFERENCES tasks(task_id),
+    CONSTRAINT fk_task_tags_tag_id KEY (tag_id) REFERENCES tags(tag_id)
+);
+
+CREATE TABLE task_history (
+    history_id BIGSERIAL,
+    task_id BIGINT NOT NULL,
+    changed_by_user_id BIGINT NOT NULL,
+    old_status VARCHAR(50),
+    new_status VARCHAR(50) NOT NULL,
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_task_history PRIMARY KEY (history_id),
+    CONSTRAINT fk_task_history_task_id FOREIGN KEY (task_id) REFERENCES tasks(task_id),
+    CONSTRAINT fk_task_history_user_id FOREIGN KEY (changed_by_user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE activity_logs (
+    log_id BIGSERIAL,
+    user_id BIGINT,
+    action_type VARCHAR(50) NOT NULL,
+    entity_name VARCHAR(50) NOT NULL,
+    entity_id BIGINT,
+    description TEXT,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_activity_logs PRIMARY KEY (log_id),
+    CONSTRAINT fk_activity_logs_user_id FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE UNIQUE INDEX uq_active_user_email ON users(email) WHERE is_deleted = FALSE;
+CREATE UNIQUE INDEX uq_active_workspace_slug ON workspaces(slug) WHERE is_deleted = FALSE;
+
+CREATE INDEX idx_active_tasks ON tasks(project_id, status) WHERE is_deleted = FALSE;
+CREATE INDEX idx_active_projects ON projects(workspace_id) WHERE is_deleted = FALSE;
